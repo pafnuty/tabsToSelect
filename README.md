@@ -35,7 +35,7 @@ $.tabsToSelect({
         // Срабатывает перед сменой активного таба
         // Если функция вернёт false - смена таба не произойдёт
     },
-    beforeTabSwich: function (e) {
+    afterTabSwich: function (e) {
         // Срабатывает после смены активного таба
     },
     onResized: function () {
