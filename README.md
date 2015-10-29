@@ -5,6 +5,7 @@
 
 ## HTML
 ```html
+
 <div class="tts-tabs">
     <ul class="tts-tabs-switchers">
         <li class="tts-tabs-switcher active">таб 1</li>

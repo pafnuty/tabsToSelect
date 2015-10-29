@@ -29,11 +29,13 @@
 
 		};
 
+
 	function Plugin(obj, options) {
 		this.settings = $.extend({}, defaults, options);
 		this._defaults = defaults;
 		this.init();
 	}
+
 
 	$.extend(Plugin.prototype, {
 
@@ -50,15 +52,14 @@
 				// Пробегаем по переключателям табов и формируем селект
 				$.each($tabSwitchers, function (i, tabSwitcher) {
 					var $tabSwitcher = $(tabSwitcher), // Текущий переключатель
-						$data = $tabSwitcher.data(),
 						selected = ($tabSwitcher.hasClass('active')) ? 'selected' : '', // Определяем активный таб
-						option = '<option value="' + i + '" ' + selected + '>' + $tabSwitcher.text() + '</option>'; 
+						option = '<option value="' + i + '" ' + selected + '>' + $tabSwitcher.text() + '</option>';
 
 					$selectInner.push(option);
 				});
 
 				$select
-					// Добавляем в селект пункты
+				// Добавляем в селект пункты
 					.html($selectInner.join(''))
 					// Навешиваем обработчик на изменение этого селекта
 					.on('change.' + pluginName, function (e) {
@@ -74,7 +75,7 @@
 					});
 
 				$this
-					// Вставляем сформированный селект в начало блока с табами
+				// Вставляем сформированный селект в начало блока с табами
 					.prepend($select)
 					// Навешиваем обработчик на клик по неативным переключателям
 					.on('click.' + pluginName, '.tts-tabs-switcher:not(.active)', function () {
@@ -90,32 +91,31 @@
 						// Выполняем колбэк перед сменой активного таба
 						var beforeTabSwich = self.settings.beforeTabSwich.call($this, e);
 
-						if (!beforeTabSwich) {
-							return false;
-						};
+						if (beforeTabSwich) {
+							var $thisTab = $($tabSwitchers[e.tab]),
+								$tabContent = $thisTab.closest('.tts-tabs').find('.tts-tabs-item'),
+								$thisTabContent = $tabContent.eq($thisTab.index());
 
-						var $thisTab = $($tabSwitchers[e.tab]),
-							$tabContent = $thisTab.closest('.tts-tabs').find('.tts-tabs-item'),
-							$thisTabContent = $tabContent.eq($thisTab.index());
+							// Меняем активные пункт селекта
+							$select.val(e.tab).trigger({
+								type: 'change',
+								flag: true, // для предотвращения рекурсии при клике на переключатель таба
+							});
 
-						// Меняем активные пункт селекта
-						$select.val(e.tab).trigger({
-							type: 'change',
-							flag: true, // для предотвращения рекурсии при клике на переключатель таба
-						});
+							// Меняем активный таб 
+							$thisTab
+								.addClass('active')
+								.siblings().removeClass('active');
 
-						// Меняем активный таб 
-						$thisTab
-							.addClass('active')
-							.siblings().removeClass('active');
+							$tabContent.removeClass('active');
+							$thisTabContent.addClass('active');
 
-						$tabContent.removeClass('active');
-						$thisTabContent.addClass('active');
+							$thisTab.trigger({
+								type: 'tabClick.' + pluginName,
+								tab: $thisTabContent
+							});
+						}
 
-						$thisTab.trigger({
-							type: 'tabClick.' + pluginName,
-							tab: $thisTabContent
-						});
 
 						// Выполняем колбэк после смены активного таба
 						self.settings.afterTabSwich.call($this, e);
@@ -134,30 +134,27 @@
 
 		},
 
-		winResize: function () {
+		winResize: function (event) {
 			if (event && (event.type === 'resize' || event.type === 'orientationchange')) {
-				var windowWidth = $window.width(),
-					self = this;
+				var windowWidth = $window.width();
 
 				if (windowWidth === previousResizeWidth) {
 					return;
 				}
 
 				// Выполняем колбэк при ресайзе окна
-				self.settings.onResized.call();
+				this.settings.onResized();
 
 				previousResizeWidth = windowWidth;
 			}
-		},
+		}
 	});
 
-	if (typeof $[pluginName] === 'undefined') {
+	if ($[pluginName] == undefined) {
 
 		$[pluginName] = function (options) {
 			return new Plugin(this, options);
 		};
-
 	}
-
 
 }(jQuery, window, document));
