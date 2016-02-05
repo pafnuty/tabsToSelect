@@ -1,8 +1,8 @@
 /**!
  * Плагин для реализации адаптивных табов, превращающихся в селект
  * @link https://github.com/pafnuty/tabsToSelect
- * @date 27.10.2015
- * @version 1.0.0
+ * @date 05.02.2016
+ * @version 1.0.2
  * 
  */
 (function ($, window, document) {
@@ -10,12 +10,15 @@
 	var pluginName = 'tabsToSelect',
 		previousResizeWidth = 0,
 		$window = $(window),
-		$tabs = $('.tts-tabs'),
+		// $document = $(document),
+		$tabs,
 		defaults = {
 			// Класс, добавляемый с селекту
 			selectCalss: '',
 			// Класс, добавляемый с обёртке селекта
 			selectWrapperCalss: '',
+			// Куда вставлять сформированный селект (селектор внутри блока с табом)
+			selectAppendTo: '',
 			// Срабатывает при инициализации плагина
 			onInit: function () {},
 			// Срабатывает перед сменой активного таба
@@ -25,9 +28,18 @@
 			// Срабатывает после смены активного таба
 			afterTabSwich: function (event) {},
 			// Срабатывает при изменении размера окна
-			onResized: function () {},
+			onResized: function () {}
 
 		};
+
+	/**
+	 * Костылёк, но без него некорректно работает, если перенести скрипт в шапку.
+	 * 
+	 * @todo По хорошему нужно переписать плагин.
+	 */
+	$(function () {
+		$tabs = $('.tts-tabs');
+	});
 
 
 	function Plugin(obj, options) {
@@ -44,22 +56,22 @@
 
 			// Пробегаем по табам
 			$.each($tabs, function () {
-				var $this = $(this), // Текущий блок с табами
+				var $tabBlock = $(this), // Текущий блок с табами
 					$select = $('<select class="tts-tabs-select ' + self.settings.selectCalss + '" />'), // Блок с селектом
-					$tabSwitchers = $this.find('.tts-tabs-switcher'), // Переключатели табов
+					$tabSwitchers = $tabBlock.find('.tts-tabs-switcher'), // Переключатели табов
 					$selectInner = []; // Массив для option`s
 
 				// Пробегаем по переключателям табов и формируем селект
 				$.each($tabSwitchers, function (i, tabSwitcher) {
 					var $tabSwitcher = $(tabSwitcher), // Текущий переключатель
 						selected = ($tabSwitcher.hasClass('active')) ? 'selected' : '', // Определяем активный таб
-						option = '<option value="' + i + '" ' + selected + '>' + $tabSwitcher.text() + '</option>';
+						option = '<option value="' + i + '" ' + selected + '>' + $tabSwitcher.text() + '</option>'; 
 
 					$selectInner.push(option);
 				});
 
 				$select
-				// Добавляем в селект пункты
+					// Добавляем в селект пункты
 					.html($selectInner.join(''))
 					// Навешиваем обработчик на изменение этого селекта
 					.on('change.' + pluginName, function (e) {
@@ -69,27 +81,39 @@
 							// Запускаем событие смены активного таба
 							$(this).trigger({
 								type: 'tabSwitch.' + pluginName,
-								tab: tab,
+								tab: tab
 							});
 						}
 					});
 
-				$this
-				// Вставляем сформированный селект в начало блока с табами
-					.prepend($select)
+				// Вставляем сформированный селект в положенное для него место
+				if (self.settings.selectAppendTo) {
+					var $selectAppendTo = $tabBlock.find(self.settings.selectAppendTo);
+					if ($selectAppendTo.length) {
+						$select.appendTo($selectAppendTo);
+					}
+					else {
+						$tabBlock.prepend($select);
+					}
+				}
+				else {
+					$tabBlock.prepend($select);
+				}
+
+				$tabBlock
 					// Навешиваем обработчик на клик по неативным переключателям
 					.on('click.' + pluginName, '.tts-tabs-switcher:not(.active)', function () {
 						var tab = $(this).index();
 						// Запускаем событие смены активного таба
 						$(this).trigger({
 							type: 'tabSwitch.' + pluginName,
-							tab: tab,
+							tab: tab
 						});
 					})
 					// Навешиваем обработчик для смены активного таба
 					.on('tabSwitch.' + pluginName, function (e) {
-						// Выполняем колбэк перед сменой активного таба
-						var beforeTabSwich = self.settings.beforeTabSwich.call($this, e);
+						// Выполняем функцию перед сменой активного таба
+						var beforeTabSwich = self.settings.beforeTabSwich.call($thisTab, e);
 
 						if (beforeTabSwich) {
 							var $thisTab = $($tabSwitchers[e.tab]),
@@ -99,7 +123,7 @@
 							// Меняем активные пункт селекта
 							$select.val(e.tab).trigger({
 								type: 'change',
-								flag: true, // для предотвращения рекурсии при клике на переключатель таба
+								flag: true // для предотвращения рекурсии при клике на переключатель таба
 							});
 
 							// Меняем активный таб 
@@ -117,8 +141,8 @@
 						}
 
 
-						// Выполняем колбэк после смены активного таба
-						self.settings.afterTabSwich.call($this, e);
+						// Выполняем функцию после смены активного таба
+						self.settings.afterTabSwich.call($tabBlock, e);
 					});
 				// Заворачиваем селект в контейнер
 				$select.wrap('<div class="tts-tabs-select-wrapper ' + self.settings.selectWrapperCalss + '"></div>');
@@ -128,7 +152,7 @@
 				self.winResize(event);
 			});
 
-			// Выполняем колбэк после инициализации плагина
+			// Выполняем функцию после инициализации плагина
 			self.settings.onInit.call($tabs);
 
 
@@ -142,7 +166,7 @@
 					return;
 				}
 
-				// Выполняем колбэк при ресайзе окна
+				// Выполняем функцию при ресайзе окна
 				this.settings.onResized();
 
 				previousResizeWidth = windowWidth;
@@ -150,11 +174,11 @@
 		}
 	});
 
-	if ($[pluginName] == undefined) {
+	if (typeof $[pluginName] === 'undefined') {
 
 		$[pluginName] = function (options) {
 			return new Plugin(this, options);
 		};
 	}
 
-}(jQuery, window, document));
+}($, window, document));

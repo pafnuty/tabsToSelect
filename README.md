@@ -29,6 +29,8 @@ $.tabsToSelect({
     selectCalss: 'styler', 
     // Класс, добавляемый с обёртке селекта
     selectWrapperCalss: 'styler-wrapper', 
+    // Куда вставлять сформированный селект (селектор внутри блока с табами)
+    selectAppendTo: '',
     onInit: function () {
        // Срабатывает при инициализации плагина
     },
@@ -41,6 +43,6 @@ $.tabsToSelect({
     },
     onResized: function () {
         // Срабатывает при изменении размера окна
-    },
+    }
 });
 ```
